@@ -50,7 +50,7 @@ $conn = getDatabaseConnection();
 
         <div class="product-grid">
         <?php
-        $products_result = $conn->query(" SELECT product_id, product_name, size, description, price, stock_quantity
+        $products_result = $conn->query(" SELECT product_id, product_name, size, description, image, price, stock_quantity
             FROM products
             WHERE status = 'active'
             ORDER BY product_name 
@@ -59,7 +59,11 @@ $conn = getDatabaseConnection();
 
         <?php while ($product = $products_result->fetch_assoc()): ?>
             <div class="product-card">
-                <div class="product-image"></div>
+                <div class="product-image">
+                <img src="../images/<?php echo htmlspecialchars($product['image']); ?>" 
+                            width="130" height="130"  alt="<?php echo htmlspecialchars($product['product_name']); ?>">
+
+                </div>
                 <div class="product-body">
                     <h3 class="product-title">
                         <?php echo htmlspecialchars($product['product_name']); ?>

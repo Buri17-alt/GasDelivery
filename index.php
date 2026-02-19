@@ -109,11 +109,14 @@ $products_result = $conn->query($products_query);
             <h2 style="text-align: center; font-size: 2.5rem; margin-bottom: 3rem;">Featured Products</h2>
             <div class="product-grid">
                 <?php 
-                 $products_result = $conn->query("SELECT product_name, size, price, stock_quantity FROM products");
+                $products_result = $conn->query("SELECT product_name, size, price, stock_quantity, image FROM products");
+
                  while ($product = $products_result->fetch_assoc()): ?>
                     <div class="product-card">
                         <div class="product-image">
-                            <img src="images/1.png" width="70px" height="70px" alt="">
+                        <img src="images/<?php echo htmlspecialchars($product['image']); ?>" 
+                            width="130" height="130"  alt="<?php echo htmlspecialchars($product['product_name']); ?>">
+
                         </div>
                         <div class="product-body">
                             <h3 class="product-title"><?php echo htmlspecialchars($product['product_name']); ?></h3>
