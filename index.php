@@ -59,7 +59,7 @@ $products_result = $conn->query($products_query);
     </header>
 
     <!-- Hero Section -->
-    <section style="background: linear-gradient(135deg, #2563eb, #1e40af); color: white; padding: 4rem 0;">
+    <section style="background: url('images/professional-calibrating-vacuum-pump.jpg') center/cover no-repeat; color: white; padding: 4rem 0;">
         <div class="container">
             <div style="max-width: 600px; margin: 0 auto; text-align: center;">
                 <h1 style="font-size: 3rem; margin-bottom: 1rem;">Fast & Reliable Gas Delivery</h1>
