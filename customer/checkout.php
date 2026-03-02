@@ -6,6 +6,7 @@ require_once '../includes/functions.php';
 requireCustomer();
 
 $conn = getDatabaseConnection();
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $user_id = getCurrentUserId();
 
 // Get user details
@@ -17,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $payment_method = isset($_POST['payment_method']) ? sanitizeInput($_POST['payment_method']) : '';
     $notes = isset($_POST['notes']) ? sanitizeInput($_POST['notes']) : '';
     $cart_data = isset($_POST['cart_data']) ? json_decode($_POST['cart_data'], true) : [];
+
     
     if (!empty($cart_data) && !empty($delivery_address) && !empty($payment_method)) {
         // Calculate total
@@ -26,22 +28,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         // Insert order
-        $stmt = $conn->prepare("INSERT INTO orders (customer_id, delivery_address, total_amount, payment_method, notes) VALUES (?, ?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO orders (user_id, delivery_address, total_amount, payment_method, notes)VALUES (?, ?, ?, ?, ?)");
         $stmt->bind_param("isdss", $user_id, $delivery_address, $total_amount, $payment_method, $notes);
-        
         if ($stmt->execute()) {
             $order_id = $conn->insert_id;
             
             // Insert order items
-            $stmt = $conn->prepare("INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal) VALUES (?, ?, ?, ?, ?)");
+            $stmt = $conn->prepare("INSERT INTO order_items(order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
             
+if ($stmt === false) {
+    // Output the SQL error
+    die('MySQL prepare error: ' . $conn->error);
+}
             foreach ($cart_data as $item) {
                 $product_id = $item['productId'];
                 $quantity = $item['quantity'];
                 $unit_price = $item['price'];
                 $subtotal = $unit_price * $quantity;
                 
-                $stmt->bind_param("iiidd", $order_id, $product_id, $quantity, $unit_price, $subtotal);
+                $stmt->bind_param("iiid", $order_id, $product_id, $quantity, $unit_price);
                 $stmt->execute();
                 
                 // Update stock
@@ -60,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "Please fill in all required fields and ensure your cart is not empty.";
     }
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -180,44 +186,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <p>&copy; 2025 Gas Delivery Management System. All rights reserved.</p>
         </div>
     </footer>
-
     <script src="../js/main.js"></script>
-    <script>
-        const cart = getCart();
-        
-        if (cart.length === 0) {
-            window.location.href = 'products.php';
-        }
-        
-        // Populate order summary
-        let html = '';
-        let total = 0;
-        
-        cart.forEach(item => {
-            const subtotal = item.price * item.quantity;
-            total += subtotal;
-            html += `
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #e5e7eb;">
-                    <div>
-                        <div style="font-weight: 500;">${item.productName}</div>
-                        <div style="color: #6b7280; font-size: 0.875rem;">Qty: ${item.quantity} × ${formatCurrency(item.price)}</div>
-                    </div>
-                    <div style="font-weight: 600;">${formatCurrency(subtotal)}</div>
-                </div>
-            `;
-        });
-        
+<script>
+    var checkoutCart = getCart();
+    
+    if (checkoutCart.length === 0) {
+        window.location.href = 'products.php';
+    }
+    
+    // Populate order summary
+    let html = '';
+    let total = 0;
+    
+    checkoutCart.forEach(item => {
+        const subtotal = item.price * item.quantity;
+        total += subtotal;
         html += `
-            <div style="display: flex; justify-content: space-between; padding-top: 1rem; border-top: 2px solid #e5e7eb;">
-                <strong>Total:</strong>
-                <strong style="color: #2563eb; font-size: 1.5rem;">${formatCurrency(total)}</strong>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #e5e7eb;">
+                <div>
+                    <div style="font-weight: 500;">${item.productName}</div>
+                    <div style="color: #6b7280; font-size: 0.875rem;">Qty: ${item.quantity} × ${formatCurrency(item.price)}</div>
+                </div>
+                <div style="font-weight: 600;">${formatCurrency(subtotal)}</div>
             </div>
         `;
-        
-        document.getElementById('order-summary').innerHTML = html;
-        document.getElementById('cart_data').value = JSON.stringify(cart);
-    </script>
-</body>
-</html>
+    });
+    
+    html += `
+        <div style="display: flex; justify-content: space-between; padding-top: 1rem; border-top: 2px solid #e5e7eb;">
+            <strong>Total:</strong>
+            <strong style="color: #2563eb; font-size: 1.5rem;">${formatCurrency(total)}</strong>
+        </div>
+    `;
+    
+    document.getElementById('order-summary').innerHTML = html;
 
-<?php closeDatabaseConnection($conn); ?>
+    // ✅ FIXED LINE (was using wrong variable)
+    document.getElementById('cart_data').value = JSON.stringify(checkoutCart);
+</script>
